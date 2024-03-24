@@ -55,8 +55,16 @@ def backward_propagation(X, Y, A1, A2, W2, Z1, m):
     dZ1 = W2.T.dot(dZ2)*derivative_ReLU(Z1) # 10, m
     dW1 = 1/m * (dZ1.dot(X.T)) #10, 784
     db1 = 1/m * np.sum(dZ1,1) # 10, 1
-
     return dW1, db1, dW2, db2
+    
+    # dZ2 = (A2 - one_hot(Y))/Y.size
+    # dW2 = dZ2.dot(A1.T)
+    # db2 = np.sum(dZ2, axis = 1, keepdims = True)
+    # dA1 = W2.T.dot(dZ2)
+    # dZ1 = dA1* (Z1>0).astype(int)
+    # dW1 = dZ1.dot(X.T)
+    # db1 = np.sum(dZ1, axis = 1, keepdims = True)
+    # return dW1, db1, dW2, db2
 
 def update_params(alpha, W1, b1, W2, b2, dW1, db1, dW2, db2):
     W1 -= alpha * dW1
@@ -72,6 +80,12 @@ def get_predictions(A2):
 def get_accuracy(predictions, Y):
     return np.sum(predictions == Y)/Y.size
 
+def CE_loss(A2, Y):
+    m = A2.shape[1]
+    return -np.sum(np.log(A2[Y, range(m)]))/Y.size
+    # return -np.sum(np.log(A2[Y, np.arange(m)])) / m
+    
+
 def gradient_descent(X, Y, alpha, iterations):
     size , m = X.shape
 
@@ -85,7 +99,9 @@ def gradient_descent(X, Y, alpha, iterations):
         if (i+1) % int(iterations/10) == 0:
             print(f"Iteration: {i+1} / {iterations}")
             prediction = get_predictions(A2)
-            print(f'{get_accuracy(prediction, Y):.3%}')
+            acc = get_accuracy(prediction, Y)
+            loss = CE_loss(A2, Y)
+            print(f'acc: {acc:.3%}, loss: {loss:.3%}')
     return W1, b1, W2, b2
 
 def make_predictions(X, W1 ,b1, W2, b2):
@@ -143,9 +159,19 @@ def load_data_2():
     return X_train, Y_train, X_test, Y_test
 
 def train(X_train, Y_train, iterations=200):
+    timer_start = datetime.now()
     W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.15, iterations)
     with open("trained_params.pkl","wb") as dump_file:
         pickle.dump((W1, b1, W2, b2),dump_file)
+    timer_end = datetime.now()
+    difference = timer_end - timer_start
+    print("The model has successfully trained in {:2f} seconds.".format(difference.total_seconds()))
+    return W1, b1, W2, b2
+
+def load_model(): # file_path
+    with open("trained_params.pkl","rb") as dump_file:
+        W1, b1, W2, b2 = pickle.load(dump_file)
+    return W1, b1, W2, b2
 
 def process_image(image_path):
     # Load the image
@@ -164,25 +190,56 @@ def process_image(image_path):
 if __name__ == '__main__':
 
     # loading data
-    X_train, Y_train, X_test, Y_test = load_data_1()
-    # X_train, Y_train, X_test, Y_test = load_data_2()
-    """
-    # training data and save the model
-    timer_start = datetime.now()
+    # X_train, Y_train, X_test, Y_test = load_data_1()
+    X_train, Y_train, X_test, Y_test = load_data_2()
+    
+    # # training data and save the model
     train(X_train, Y_train, 200) # W1, b1, W2, b2
-    timer_end = datetime.now()
-    difference = timer_end - timer_start
-    print("The model has successfully trained in {:2f} seconds.".format(difference.total_seconds()))
-    """
+    
     # load the model
-    with open("trained_params.pkl","rb") as dump_file:
-        W1, b1, W2, b2 = pickle.load(dump_file)
-    # predict
-    # for i in range(1,10):
-    #     img_array = process_image(image_path = f"digits/{i}.jpg")
-    #     show_prediction(img_array, i, W1, b1, W2, b2)
+    W1, b1, W2, b2 = load_model()
 
-    for i in range(20):
-        index = random.randint(0, 1000)
-        show_prediction(X_test[:, index,None], Y_test[index], W1, b1, W2, b2)
-        # show_prediction(200 , X_test, Y_test, W1, b1, W2, b2)
+    # predict
+    for i in range(1,10):
+        img_array = process_image(image_path = f"digits/{i}.jpg")
+        show_prediction(img_array, i, W1, b1, W2, b2)
+
+    # for i in range(20):
+    #     index = random.randint(0, 1000)
+    #     show_prediction(X_test[:, index,None], Y_test[index], W1, b1, W2, b2)
+    #     # show_prediction(200 , X_test, Y_test, W1, b1, W2, b2)
+
+
+"""
+Input Layer (784 neurons)       Hidden Layer 1 (10 neurons)      Hidden Layer 2 (10 neurons)      Output Layer (10 neurons)
+        |                                 |                                 |                                 |
+        |                                 |                                 |                                 |
+        -----------------------------------                                 |                                 |
+                    |                                                        |                                 |
+                    |                                                        |                                 |
+                    --------------------------                              |                                 |
+                                             |                              |                                 |
+                                             |                              |                                 |
+                                             --------------------------------                                |
+                                                                   |                                          |
+                                                                   |                                          |
+                                                                   --------------------------------------------
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                         |
+                                                                                Softmax Activation
+"""
