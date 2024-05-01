@@ -60,8 +60,8 @@ class DigitRecognizer(object):
 
     def make_predictions(self, X):
         _, _, _, A2 = self.__forward_propagation(X)
-        predictions = self.get_predictions(A2)
-        return predictions
+        digit, accuracy, predictions = DigitRecognizer.get_predictions(A2)
+        return digit, accuracy, predictions #, A2
     
     #############################################
     # private methods
@@ -139,17 +139,6 @@ class DigitRecognizer(object):
         self.show_evaluation(history, iterations)
         return self.weight_1, self.bias_1, self.weight_2, self.bias_2
 
-    def show_prediction(self, vect_X, label):
-        prediction = self.make_predictions(vect_X)
-        print("Prediction: ", prediction)
-        print("Label: ", label)
-        
-        current_image = vect_X.reshape((DigitRecognizer.WIDTH, DigitRecognizer.HEIGHT)) * DigitRecognizer.SCALE_FACTOR
-
-        plt.gray()
-        plt.imshow(current_image, interpolation='nearest')
-        plt.show()
-
 
     #############################################
     # static methods
@@ -176,7 +165,11 @@ class DigitRecognizer(object):
 
     @staticmethod
     def get_predictions(A2):
-        return np.argmax(A2, 0)
+        A2 = A2.reshape(1, -1)[0] # A2_reshaped
+        digit = np.argmax(A2) 
+        accuracy = np.max(A2) * 100
+        predictions = [(d, a*100) for d, a in enumerate(A2)]
+        return digit, accuracy, predictions
 
     @staticmethod
     def get_accuracy(predictions, Y):
@@ -188,9 +181,7 @@ class DigitRecognizer(object):
         return -np.sum(np.log(A2[Y, np.arange(m)]))/ m
     
     @staticmethod
-    def process_image(image_path):
-        # Load the image
-        img = Image.open(image_path)
+    def process_image(img):
         #resize image to 28x28 pixels
         img = img.resize((28,28))
         #convert rgb to grayscale
@@ -201,3 +192,27 @@ class DigitRecognizer(object):
         img_array = img_array/255.0
         img_array = 1 - img_array
         return img_array
+
+
+
+if __name__ == '__main__':
+    digit_recognizer = DigitRecognizer()
+
+    # (X_train, Y_train), (X_test, Y_test) = digit_recognizer.load_data()
+    # digit_recognizer.train(X_train, Y_train, X_test, Y_test)
+
+    digit_recognizer.load_model()
+
+    # # predict
+    for i in range(1,1+1):
+        img = Image.open(f"digits/{i}.jpg")  
+        img_array = DigitRecognizer.process_image(img)
+        # show_prediction(img_array, i, W1, b1, W2, b2)
+        prediction = digit_recognizer.make_predictions(img_array)
+        print("Prediction: ", prediction)
+        print("Label: ", i)
+        current_image = img_array.reshape((DigitRecognizer.WIDTH, DigitRecognizer.HEIGHT)) * DigitRecognizer.SCALE_FACTOR
+
+        plt.gray()
+        plt.imshow(current_image, interpolation='nearest')
+        plt.show()
