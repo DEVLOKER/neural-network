@@ -129,12 +129,7 @@ class PaintWidget(QWidget):
         self.results_label.setText(' digit : {} \n accuracy: {:.2f}%'.format(digit, accuracy))
         predictions_text = ["{} => {:.2f}%".format(digit, accuracy) for (digit, accuracy) in predictions]
         self.predict_label.setText("\n".join(predictions_text))
-        print(predictions)
-        # digit, accuracy, prediction = self.digit_recognizer.predict_digit(img)
-        # self.results_label.setFont(QFont('Helvetica', 40))
-        # self.results_label.setText(' digit : {} \n accuracy: {}%'.format(digit, int(accuracy*100)))
-        # predictions = ["{} => {:.2f}%".format(d, a*100) for d, a  in enumerate(prediction)]
-        # self.predict_label.setText("\n".join(predictions))
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
