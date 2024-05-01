@@ -183,13 +183,13 @@ class DigitRecognizer(object):
     @staticmethod
     def process_image(img):
         #resize image to 28x28 pixels
-        img = img.resize((28,28))
+        img = img.resize((DigitRecognizer.WIDTH,DigitRecognizer.HEIGHT))
         #convert rgb to grayscale
         img = img.convert('L')
         img_array = np.array(img)
-        img_array = img_array.reshape(28*28,1)
+        img_array = img_array.reshape(DigitRecognizer.WIDTH*DigitRecognizer.HEIGHT,1)
         # img_array = img_array.reshape(1,28,28,1)
-        img_array = img_array/255.0
+        img_array = img_array/DigitRecognizer.SCALE_FACTOR
         img_array = 1 - img_array
         return img_array
 
