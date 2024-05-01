@@ -71,7 +71,6 @@ def update_params(alpha, W1, b1, W2, b2, dW1, db1, dW2, db2):
     b1 -= alpha * np.reshape(db1, (10,1))
     W2 -= alpha * dW2
     b2 -= alpha * np.reshape(db2, (10,1))
-
     return W1, b1, W2, b2
 
 def get_predictions(A2):
@@ -80,29 +79,70 @@ def get_predictions(A2):
 def get_accuracy(predictions, Y):
     return np.sum(predictions == Y)/Y.size
 
-def CE_loss(A2, Y):
-    m = A2.shape[1]
-    return -np.sum(np.log(A2[Y, range(m)]))/Y.size
-    # return -np.sum(np.log(A2[Y, np.arange(m)])) / m
+def get_loss(A2, Y, m):
+    # m = A2.shape[1] Y.size
+    return -np.sum(np.log(A2[Y, np.arange(m)]))/ m
     
 
-def gradient_descent(X, Y, alpha, iterations):
-    size , m = X.shape
-
-    W1, b1, W2, b2 = init_params(size)
+def gradient_descent(X_train, Y_train, X_val, Y_val, alpha, iterations):
+    size_train, m_train = X_train.shape
+    size_val, m_val = X_val.shape
+    W1, b1, W2, b2 = init_params(size_train)
+    
+    history = { "train": { "accuracy": [], "loss": []}, "validation": { "accuracy": [], "loss": []}}
     for i in range(iterations):
-        Z1, A1, Z2, A2 = forward_propagation(X, W1, b1, W2, b2)
-        dW1, db1, dW2, db2 = backward_propagation(X, Y, A1, A2, W2, Z1, m)
+        # Training
+        Z1_train, A1_train, Z2_train, A2_train = forward_propagation(X_train, W1, b1, W2, b2)
+        # delta
+        dW1_train, db1_train, dW2_train, db2_train = backward_propagation(X_train, Y_train, A1_train, A2_train, W2, Z1_train, m_train)
+        W1, b1, W2, b2 = update_params(alpha, W1, b1, W2, b2, dW1_train, db1_train, dW2_train, db2_train)   
 
-        W1, b1, W2, b2 = update_params(alpha, W1, b1, W2, b2, dW1, db1, dW2, db2)   
+        # Validation
+        Z1_val, A1_val, Z2_val, A2_val = forward_propagation(X_val, W1, b1, W2, b2)
 
-        if (i+1) % int(iterations/10) == 0:
-            print(f"Iteration: {i+1} / {iterations}")
-            prediction = get_predictions(A2)
-            acc = get_accuracy(prediction, Y)
-            loss = CE_loss(A2, Y)
-            print(f'acc: {acc:.3%}, loss: {loss:.3%}')
+
+        if (i + 1) % int(iterations / 10) == 0:
+            train_prediction = get_predictions(A2_train)
+            train_accuracy = get_accuracy(train_prediction, Y_train)
+            train_loss = get_loss(A2_train, Y_train, m_train)
+            val_loss = get_loss(A2_val, Y_val, m_val)
+            val_prediction = get_predictions(A2_val)
+            val_accuracy = get_accuracy(val_prediction, Y_val)
+            history["validation"]["loss"].append(val_loss)
+            history["validation"]["accuracy"].append(val_accuracy)
+            history["train"]["loss"].append(train_loss)
+            history["train"]["accuracy"].append(train_accuracy)
+
+            print(f"Iteration: {i + 1} / {iterations}")
+            print(f'Training Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}')
+            print(f'Validation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}')
+        
+
+    show_evaluation(history, iterations)
     return W1, b1, W2, b2
+
+def show_evaluation(history, iterations):
+    train_accuracies, train_losses = history["train"]["accuracy"], history["train"]["loss"]
+    validation_accuracies, validation_losses = history["validation"]["accuracy"], history["validation"]["loss"]
+    # Create a single figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    # range(iterations), 
+    ax1.plot(train_accuracies, label='Training Accuracy')
+    ax1.plot(validation_accuracies, label='Validation Accuracy')
+    ax1.set_title('Accuracy')
+    ax1.set_xlabel('Iterations')
+    ax1.set_ylabel('Accuracy')
+    ax1.legend()
+
+    ax2.plot(train_losses, label='Training Loss')
+    ax2.plot(validation_losses, label='Validation Loss')
+    ax2.set_title('Loss')
+    ax2.set_xlabel('Iterations')
+    ax2.set_ylabel('Loss')
+    ax2.legend()
+
+    plt.show()
+
 
 def make_predictions(X, W1 ,b1, W2, b2):
     _, _, _, A2 = forward_propagation(X, W1, b1, W2, b2)
@@ -127,7 +167,6 @@ def show_prediction(vect_X, label, W1, b1, W2, b2):
     plt.show()
 
 
-
 ############## MAIN ##############
 
 def load_data_1():
@@ -135,9 +174,11 @@ def load_data_1():
     SCALE_FACTOR = 255 # TRES IMPORTANT SINON OVERFLOW SUR EXP
     WIDTH = X_train.shape[1]
     HEIGHT = X_train.shape[2]
-    X_train = X_train.reshape(X_train.shape[0],WIDTH*HEIGHT).T / SCALE_FACTOR
-    X_test = X_test.reshape(X_test.shape[0],WIDTH*HEIGHT).T  / SCALE_FACTOR
-    return X_train, Y_train, X_test, Y_test
+    # Input Layer neurons (784)
+    INPUT_NEURONS = WIDTH * HEIGHT
+    X_train = X_train.reshape(X_train.shape[0],INPUT_NEURONS).T / SCALE_FACTOR
+    X_test = X_test.reshape(X_test.shape[0],INPUT_NEURONS).T  / SCALE_FACTOR
+    return (X_train, Y_train), (X_test, Y_test)
 
 def load_data_2():
     data = pd.read_csv('data/train.csv')
@@ -156,11 +197,11 @@ def load_data_2():
     # X_train = X_train.reshape(X_train.shape[0], X_train.shape[1]*X_train.shape[2])
     X_train = X_train / 255.
     # _,m_train = X_train.shape
-    return X_train, Y_train, X_test, Y_test
+    return (X_train, Y_train), (X_test, Y_test)
 
-def train(X_train, Y_train, iterations=200):
+def train(X_train, Y_train, X_test, Y_test, iterations=200):
     timer_start = datetime.now()
-    W1, b1, W2, b2 = gradient_descent(X_train, Y_train, 0.15, iterations)
+    W1, b1, W2, b2 = gradient_descent(X_train, Y_train, X_test, Y_test, 0.15, iterations)
     with open("trained_params.pkl","wb") as dump_file:
         pickle.dump((W1, b1, W2, b2),dump_file)
     timer_end = datetime.now()
@@ -187,59 +228,26 @@ def process_image(image_path):
     img_array = 1 - img_array
     return img_array
 
+
+
 if __name__ == '__main__':
 
     # loading data
-    # X_train, Y_train, X_test, Y_test = load_data_1()
-    X_train, Y_train, X_test, Y_test = load_data_2()
+    (X_train, Y_train), (X_test, Y_test) = load_data_1()
+    # (X_train, Y_train), (X_test, Y_test) = load_data_2()
     
     # # training data and save the model
-    train(X_train, Y_train, 200) # W1, b1, W2, b2
+    # train(X_train, Y_train, X_test, Y_test, 1000) # W1, b1, W2, b2
     
     # load the model
     W1, b1, W2, b2 = load_model()
 
     # predict
-    for i in range(1,10):
-        img_array = process_image(image_path = f"digits/{i}.jpg")
-        show_prediction(img_array, i, W1, b1, W2, b2)
+    # for i in range(1,10):
+    #     img_array = process_image(image_path = f"digits/{i}.jpg")
+    #     show_prediction(img_array, i, W1, b1, W2, b2)
 
-    # for i in range(20):
-    #     index = random.randint(0, 1000)
-    #     show_prediction(X_test[:, index,None], Y_test[index], W1, b1, W2, b2)
-    #     # show_prediction(200 , X_test, Y_test, W1, b1, W2, b2)
-
-
-"""
-Input Layer (784 neurons)       Hidden Layer 1 (10 neurons)      Hidden Layer 2 (10 neurons)      Output Layer (10 neurons)
-        |                                 |                                 |                                 |
-        |                                 |                                 |                                 |
-        -----------------------------------                                 |                                 |
-                    |                                                        |                                 |
-                    |                                                        |                                 |
-                    --------------------------                              |                                 |
-                                             |                              |                                 |
-                                             |                              |                                 |
-                                             --------------------------------                                |
-                                                                   |                                          |
-                                                                   |                                          |
-                                                                   --------------------------------------------
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                         |
-                                                                                Softmax Activation
-"""
+    for i in range(20):
+        index = random.randint(0, 1000)
+        show_prediction(X_test[:, index,None], Y_test[index], W1, b1, W2, b2)
+        # show_prediction(200 , X_test, Y_test, W1, b1, W2, b2)
