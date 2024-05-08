@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QFileDialog
+from PyQt6.QtWidgets import QWidget, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox
 from algorithm.DigitRecognizer import DigitRecognizer
 from gui.PaintWidget import PaintWidget
 
@@ -20,11 +20,15 @@ class MainWindow(QMainWindow):
         # train button
         self.train_button = QPushButton("Train model (.pkl)")
         self.train_button.clicked.connect(self.handleTrain)
-        # train button
+        # input iterations
+        self.iterations_input = QLineEdit("2000") # QDoubleSpinBox()
+        # self.iterations_input.valueChanged.connect(self.value_changed)
+        # load button
         self.load_button = QPushButton("Load model (.pkl)")
         self.load_button.clicked.connect(self.handleLoad)
         # training label
         training_label = QLabel("")
+        right_layout.addWidget(self.iterations_input)
         right_layout.addWidget(self.train_button)
         right_layout.addWidget(self.load_button)
         right_layout.addWidget(training_label)
@@ -68,10 +72,12 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(right_widget)
 
     def handleTrain(self):
+        iterations = int(self.iterations_input.text())
+        print(iterations)
         self.train_button.setText("Training model, please wait ...")
         self.digit_recognizer = DigitRecognizer()
         (X_train, Y_train), (X_test, Y_test) = self.digit_recognizer.load_data()
-        self.digit_recognizer.train(X_train, Y_train, X_test, Y_test)
+        self.digit_recognizer.train(X_train, Y_train, X_test, Y_test, iterations)
         self.canvas.set_digit_recognizer(self.digit_recognizer)
         self.train_button.setText("Train model (.pkl)")
 
@@ -87,3 +93,4 @@ class MainWindow(QMainWindow):
         self.digit_recognizer.load_model(file_path=fname)
         self.canvas.set_digit_recognizer(self.digit_recognizer)
         self.train_button.setText("Load model (.pkl)")
+        

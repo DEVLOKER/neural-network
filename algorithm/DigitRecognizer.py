@@ -65,7 +65,12 @@ class DigitRecognizer(object):
     def make_predictions(self, X):
         W1, b1, W2, b2 = self.weight_1, self.bias_1, self.weight_2, self.bias_2
         _, _, _, A2 = self.__forward_propagation(W1, b1, W2, b2, X)
-        digit, accuracy, predictions = DigitRecognizer.get_predictions(A2)
+        # digit, accuracy, predictions = DigitRecognizer.get_predictions(A2)
+        A2 = A2.reshape(1, -1)[0] # A2_reshaped
+        digit = np.argmax(A2) 
+        accuracy = np.max(A2) * 100
+        predictions = [(d, a*100) for d, a in enumerate(A2)]
+        # return digit, accuracy, predictions
         return digit, accuracy, predictions #, A2
     
     #############################################
@@ -109,7 +114,6 @@ class DigitRecognizer(object):
         db1 = 1 / m * np.sum(dZ1)
         return dW1, db1, dW2, db2
 
-
     def __gradient_descent(self, X_train, Y_train, X_val, Y_val, alpha=ALPHA, iterations=ITERATIONS):
         size_train, m_train = X_train.shape
         size_val, m_val = X_val.shape
@@ -146,7 +150,7 @@ class DigitRecognizer(object):
         self.show_evaluation(history, iterations)
         return W1, b1, W2, b2
 
-    def show_evaluation (self, history, iterations, filename=TRAINING_HISTORY):
+    def show_evaluation(self, history, iterations, filename=TRAINING_HISTORY):
         # Create a single figure with two subplots
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
         # Plot training & validation accuracy values
