@@ -1,6 +1,9 @@
-from PyQt6.QtWidgets import QWidget, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox
+from PyQt6.QtWidgets import QWidget, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QScrollArea, QLabel, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox
 from algorithm.DigitRecognizer import DigitRecognizer
 from gui.PaintWidget import PaintWidget
+from PyQt6.QtCore import QThread, pyqtSignal
+
+
 
 class MainWindow(QMainWindow):
     def __init__(self, digit_recognizer: DigitRecognizer=None):
@@ -18,7 +21,7 @@ class MainWindow(QMainWindow):
         right_layout = QVBoxLayout()
         right_widget.setLayout(right_layout)
         # train button
-        self.train_button = QPushButton("Train model (.pkl)")
+        self.train_button = QPushButton("Train model and save it as (.pkl)")
         self.train_button.clicked.connect(self.handleTrain)
         # input iterations
         self.iterations_input = QLineEdit("2000") # QDoubleSpinBox()
@@ -27,11 +30,16 @@ class MainWindow(QMainWindow):
         self.load_button = QPushButton("Load model (.pkl)")
         self.load_button.clicked.connect(self.handleLoad)
         # training label
-        training_label = QLabel("")
+        self.training_label = QLabel("")
+        # Create a QScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidget(self.training_label)
+        self.scroll_area.setWidgetResizable(True)
+
         right_layout.addWidget(self.iterations_input)
         right_layout.addWidget(self.train_button)
         right_layout.addWidget(self.load_button)
-        right_layout.addWidget(training_label)
+        right_layout.addWidget(self.scroll_area)
 
         # Center widget
         center_widget = QWidget()
@@ -73,13 +81,18 @@ class MainWindow(QMainWindow):
 
     def handleTrain(self):
         iterations = int(self.iterations_input.text())
-        print(iterations)
         self.train_button.setText("Training model, please wait ...")
         self.digit_recognizer = DigitRecognizer()
-        (X_train, Y_train), (X_test, Y_test) = self.digit_recognizer.load_data()
-        self.digit_recognizer.train(X_train, Y_train, X_test, Y_test, iterations)
+        self.training_label.setText("")
+
+        self.worker = ParallelWorker(self.scroll_area, self.training_label, iterations, self.digit_recognizer)
+        self.worker.result_signal.connect(self.trainFinished)
+        self.worker.start()
         self.canvas.set_digit_recognizer(self.digit_recognizer)
-        self.train_button.setText("Train model (.pkl)")
+        self.train_button.setText("Train model and save it (.pkl)")
+
+    def trainFinished(self, history, iterations):
+        self.digit_recognizer.show_evaluation(history, iterations)
 
     def handleLoad(self):
         (fname, _) = QFileDialog.getOpenFileName(
@@ -94,3 +107,37 @@ class MainWindow(QMainWindow):
         self.canvas.set_digit_recognizer(self.digit_recognizer)
         self.train_button.setText("Load model (.pkl)")
         
+
+class ParallelWorker(QThread):
+    result_signal = pyqtSignal(object, int)
+
+    def __init__(self, scroll_area: QScrollArea, label: QLabel, iterations: int, digit_recognizer: DigitRecognizer):
+        super().__init__()
+        self.scroll_area = scroll_area
+        self.label = label
+        self.iterations = iterations
+        self.digit_recognizer = digit_recognizer
+
+
+    def run(self):
+        (X_train, Y_train), (X_test, Y_test) = self.digit_recognizer.load_data()
+        training = self.digit_recognizer.train(X_train, Y_train, X_test, Y_test, self.iterations)
+        try:
+            while True:
+                history, W1, b1, W2, b2 = next(training)
+                train_accuracy = history["train"]["accuracy"][-1]
+                train_loss = hiùstory["train"]["loss"][-1]
+                val_accuracy = history["validation"]["accuracy"][-1]
+                val_loss = history["validation"]["loss"][-1]
+                i = len(history["train"]["accuracy"])
+                text = f"""Iteration: {i} / {self.iterations}\nTraining Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}\nValidation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}"""
+                print(text)
+                self.label.setText(f"{self.label.text()}\n{text}")
+
+                # Scroll to the bottom of the QScrollArea
+                self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
+
+
+        except StopIteration:
+            pass
+        self.result_signal.emit(history, self.iterations)

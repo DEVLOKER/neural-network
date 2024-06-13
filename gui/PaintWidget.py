@@ -13,6 +13,7 @@ class PaintWidget(QWidget):
         self.digit_recognizer = digit_recognizer
         self.results_label = results_label
         self.predict_label = predict_label
+        self.predict_label.setWordWrap(True)
         self.initUI()
 
     def initUI(self):
