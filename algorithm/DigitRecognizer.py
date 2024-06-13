@@ -19,8 +19,9 @@ class DigitRecognizer(object):
     #############################################
 
     WIDTH, HEIGHT, SCALE_FACTOR = 28, 28, 255
-    ITERATIONS=200
-    ALPHA=0.15
+    ITERATIONS=200 # epochs
+    ALPHA=0.15 # learning_rate
+    LEARNING_RATE = 0.01
     MODAL_FILE_NAME= os.path.join("results", "trained_params.pkl")
     TRAINING_HISTORY= os.path.join("results", "training_history.jpg")
 
@@ -227,21 +228,24 @@ class DigitRecognizer(object):
 if __name__ == '__main__':
     digit_recognizer = DigitRecognizer()
 
-    (X_train, Y_train), (X_test, Y_test) = digit_recognizer.load_data()
-    tr = digit_recognizer.train(X_train, Y_train, X_test, Y_test, iterations=10)
-    # while 
-    # digit_recognizer.load_model()
+    # (X_train, Y_train), (X_test, Y_test) = digit_recognizer.load_data()
+    # tr = digit_recognizer.train(X_train, Y_train, X_test, Y_test, iterations=10)
+    digit_recognizer.load_model()
+    print("W1{}".format(digit_recognizer.weight_1.shape))
+    print("B1{}".format(digit_recognizer.bias_1.shape))
+    print("W2{}".format(digit_recognizer.weight_2.shape))
+    print("B2{}".format(digit_recognizer.bias_2.shape))
 
-    # # predict
-    for i in range(1,1+1):
-        img = Image.open(f"tmp/digits/{i}.jpg")  
-        img_array = DigitRecognizer.process_image(img)
-        # show_prediction(img_array, i, W1, b1, W2, b2)
-        prediction = digit_recognizer.make_predictions(img_array)
-        print("Prediction: ", prediction)
-        print("Label: ", i)
-        current_image = img_array.reshape((DigitRecognizer.WIDTH, DigitRecognizer.HEIGHT)) * DigitRecognizer.SCALE_FACTOR
+    # # # predict
+    # for i in range(1,1+1):
+    #     img = Image.open(f"tmp/digits/{i}.jpg")  
+    #     img_array = DigitRecognizer.process_image(img)
+    #     # show_prediction(img_array, i, W1, b1, W2, b2)
+    #     prediction = digit_recognizer.make_predictions(img_array)
+    #     print("Prediction: ", prediction)
+    #     print("Label: ", i)
+    #     current_image = img_array.reshape((DigitRecognizer.WIDTH, DigitRecognizer.HEIGHT)) * DigitRecognizer.SCALE_FACTOR
 
-        plt.gray()
-        plt.imshow(current_image, interpolation='nearest')
-        plt.show()
+    #     plt.gray()
+    #     plt.imshow(current_image, interpolation='nearest')
+    #     plt.show()
