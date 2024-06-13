@@ -132,7 +132,7 @@ class DigitRecognizer(object):
         size_val, m_val = X_val.shape
         W1, b1, W2, b2 = self.__init_params(size_train)
         
-        history = { "train": { "accuracy": [], "loss": []}, "validation": { "accuracy": [], "loss": []}}
+        history = { "iterations": [], "train": { "accuracy": [], "loss": []}, "validation": { "accuracy": [], "loss": []}}
         for i in range(iterations):
             # Training
             Z1, A1, Z2, A2 = self.__forward_propagation(W1, b1, W2, b2, X_train)
@@ -143,7 +143,7 @@ class DigitRecognizer(object):
             # Validation
             Z1_val, A1_val, Z2_val, A2_val = self.__forward_propagation(W1, b1, W2, b2, X_val)
 
-            if (i + 1) % int(iterations / 100) == 0:
+            if (i + 1) % int(iterations / 10) == 0:
                 # digit, accuracy, predictions          train_prediction
                 train_prediction  = DigitRecognizer.get_predictions(A2)#[1]
                 train_accuracy = DigitRecognizer.get_accuracy(train_prediction, Y_train)
@@ -151,6 +151,7 @@ class DigitRecognizer(object):
                 val_loss = DigitRecognizer.get_loss(A2_val, Y_val, m_val)
                 val_prediction = DigitRecognizer.get_predictions(A2_val)#[1]
                 val_accuracy = DigitRecognizer.get_accuracy(val_prediction, Y_val)
+                history["iterations"].append(i+1)
                 history["validation"]["loss"].append(val_loss)
                 history["validation"]["accuracy"].append(val_accuracy)
                 history["train"]["loss"].append(train_loss)

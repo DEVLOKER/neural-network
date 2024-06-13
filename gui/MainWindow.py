@@ -129,15 +129,12 @@ class ParallelWorker(QThread):
                 train_loss = history["train"]["loss"][-1]
                 val_accuracy = history["validation"]["accuracy"][-1]
                 val_loss = history["validation"]["loss"][-1]
-                i = len(history["train"]["accuracy"])
+                i = history["iterations"][-1]
                 text = f"""Iteration: {i} / {self.iterations}\nTraining Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}\nValidation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}"""
                 print(text)
                 self.label.setText(f"{self.label.text()}\n{text}")
-
                 # Scroll to the bottom of the QScrollArea
                 self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
-
-
         except StopIteration:
             pass
         self.result_signal.emit(history, self.iterations)
