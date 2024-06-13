@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QWidget, QMainWindow, QPushButton, QHBoxLayout, QVBo
 from algorithm.DigitRecognizer import DigitRecognizer
 from gui.PaintWidget import PaintWidget
 from PyQt6.QtCore import QThread, pyqtSignal
+from time import sleep
 
 
 
@@ -134,6 +135,8 @@ class ParallelWorker(QThread):
                 print(text)
                 self.label.setText(f"{self.label.text()}\n{text}")
                 # Scroll to the bottom of the QScrollArea
+                
+                sleep(0.1)
                 self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
         except StopIteration:
             pass
