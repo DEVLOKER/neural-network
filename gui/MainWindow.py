@@ -126,7 +126,7 @@ class ParallelWorker(QThread):
             while True:
                 history, W1, b1, W2, b2 = next(training)
                 train_accuracy = history["train"]["accuracy"][-1]
-                train_loss = hiùstory["train"]["loss"][-1]
+                train_loss = history["train"]["loss"][-1]
                 val_accuracy = history["validation"]["accuracy"][-1]
                 val_loss = history["validation"]["loss"][-1]
                 i = len(history["train"]["accuracy"])
