@@ -83,6 +83,7 @@ class DigitRecognizer(object):
         self.weight_2 = np.random.rand(10,10) - 0.5
         self.bias_2 = np.random.rand(10,1) - 0.5
         return self.weight_1, self.bias_1, self.weight_2, self.bias_2
+        # DigitRecognizer.WIDTH * DigitRecognizer.HEIGHT
         # W1 = np.random.normal(size=(10, 784)) * np.sqrt(1./(784))
         # b1 = np.random.normal(size=(10, 1)) * np.sqrt(1./10)
         # W2 = np.random.normal(size=(10, 10)) * np.sqrt(1./20)
@@ -125,7 +126,7 @@ class DigitRecognizer(object):
             Z1, A1, Z2, A2 = self.__forward_propagation(W1, b1, W2, b2, X_train)
             # delta
             dW1, db1, dW2, db2 = self.__backward_propagation(Z1, A1, Z2, A2, W1, W2, X_train, Y_train)
-            W1, b1, W2, b2 = self.__update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha)   
+            W1, b1, W2, b2 = self.__update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha)
 
             # Validation
             Z1_val, A1_val, Z2_val, A2_val = self.__forward_propagation(W1, b1, W2, b2, X_val)
@@ -142,7 +143,7 @@ class DigitRecognizer(object):
                 history["validation"]["accuracy"].append(val_accuracy)
                 history["train"]["loss"].append(train_loss)
                 history["train"]["accuracy"].append(train_accuracy)
-
+                yield (i+1, train_accuracy, train_loss, val_accuracy, val_loss)
                 print(f"Iteration: {i + 1} / {iterations}")
                 print(f'Training Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}')
                 print(f'Validation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}')
@@ -175,7 +176,7 @@ class DigitRecognizer(object):
     #############################################
 
     @staticmethod
-    def ReLU(Z):
+    def ReLU(Z): # The rectified linear unit 
         return np.maximum(Z,0)
 
     @staticmethod
@@ -227,8 +228,8 @@ if __name__ == '__main__':
     digit_recognizer = DigitRecognizer()
 
     (X_train, Y_train), (X_test, Y_test) = digit_recognizer.load_data()
-    digit_recognizer.train(X_train, Y_train, X_test, Y_test, iterations=10)
-
+    tr = digit_recognizer.train(X_train, Y_train, X_test, Y_test, iterations=10)
+    # while 
     # digit_recognizer.load_model()
 
     # # predict
