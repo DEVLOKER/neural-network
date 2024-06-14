@@ -19,7 +19,7 @@ class DigitRecognizer(object):
     EPOCHS=200 # iterations
     ALPHA=0.15 # learning_rate
     LEARNING_RATE = 0.01
-    MODAL_FILE_NAME= os.path.join("results", "trained_params.pkl")
+    MODAL_FILE_NAME= os.path.join("training", "trained_params.pkl")
 
     #############################################
     # constructor
@@ -179,17 +179,10 @@ class DigitRecognizer(object):
     @staticmethod
     def get_accuracy(A2, Y):
         predictions = np.argmax(A2, axis=0)
-        # labels = np.argmax(Y, axis=0)
-        # accuracy = np.mean(predictions == labels)
-        # return accuracy
         return np.sum(predictions == Y)/Y.size
 
     @staticmethod
     def get_loss(A2, Y):
-        # m = Y.shape[1]
-        # log_probs = np.multiply(np.log(A2), Y)
-        # cost = -np.sum(log_probs) / m
-        # return np.squeeze(cost)
         m = Y.size
         return -np.sum(np.log(A2[Y, np.arange(m)]))/ m
     

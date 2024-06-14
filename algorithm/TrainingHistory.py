@@ -5,11 +5,11 @@ class TrainingHistory(object):
 
     TRAINING_HISTORY= os.path.join("results", "training_history.jpg")
 
-    def __init__(self, total_epochs):
-        self.init(total_epochs)
+    def __init__(self):
+        self.init()
 
-    def init(self, total_epochs):
-        self.total_epochs = total_epochs
+    def init(self, total_epochs=None):
+        self.total_epochs = total_epochs # if total_epochs != None else 0
         self.epochs = []
         self.training_accuracy = []
         self.training_loss = []
@@ -22,9 +22,15 @@ class TrainingHistory(object):
         self.training_loss.append(training_loss)
         self.validation_accuracy.append(validation_accuracy)
         self.validation_loss.append(validation_loss)
-        text = f"""Iteration: {epoch} / {self.total_epochs}\nTraining Accuracy: {training_accuracy:.3%} | Training Loss: {training_loss:.4f}\nValidation Accuracy: {validation_accuracy:.3%} | Validation Loss: {validation_loss:.4f}"""
+        text = f"""Iteration: {epoch} / {self.total_epochs if self.total_epochs != None else epoch}\nTraining Accuracy: {training_accuracy:.3%} \t | \t Training Loss: {training_loss:.3f}\nValidation Accuracy: {validation_accuracy:.3%} \t | \t Validation Loss: {validation_loss:.3f}\n"""
         print(text)
 
+    def set_total_epochs(self, total_epochs):
+        self.total_epochs = total_epochs
+
+    def get_total_epochs(self):
+        return self.total_epochs
+    
     def get_epochs(self):
         return self.epochs
     
