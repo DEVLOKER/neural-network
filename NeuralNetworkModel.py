@@ -97,7 +97,7 @@ class NeuralNetworkModel(object):
     def make_predictions(self, X):
         _, _, _, output = self.forward_propagation(X)
         output = output.reshape(1, -1)[0]
-        digit = np.argmax(output) 
+        digit = np.argmax(output)
         accuracy = np.max(output) * 100
         predictions = [(d, a*100) for d, a in enumerate(output)]
         return digit, accuracy, predictions
@@ -180,24 +180,26 @@ class NeuralNetworkModel(object):
 if __name__ == '__main__':
     model = NeuralNetworkModel()
     
-    # # model.train(epochs=100, learning_rate=0.15)
-    training = model.train(epochs=10, target_accurancy=0.9, learning_rate=0.15)
-    try:
-        while True:
-            text, epoch, train_accurancy, train_loss, val_accurancy, val_loss = next(training)
-            # print(text)
-    except StopIteration:
-        model.save_model()
-        model.show_evaluation()
+    # # # model.train(epochs=100, learning_rate=0.15)
+    # training = model.train(epochs=10, target_accurancy=0.9, learning_rate=0.15)
+    # try:
+    #     while True:
+    #         text, epoch, train_accurancy, train_loss, val_accurancy, val_loss = next(training)
+    #         # print(text)
+    # except StopIteration:
+    #     model.save_model()
+    #     model.show_evaluation()
 
-    # model.load_model()
+
+    model.load_model()
+
+
+    # Evaluate the model on the test set
 
     for i in range(0,9+1):
-        img = Image.open(f"tmp/digits/{i}.jpg")  
+        img = Image.open(f"training/digits/{i}.jpg")  
         img_array = NeuralNetworkModel.process_image(img)
-        # show_prediction(img_array, i, W1, b1, W2, b2)
         digit, accuracy, predictions = model.make_predictions(img_array)
-
         print(f"Label: {i} <=> Digit: {digit}")
 
 
