@@ -7,7 +7,8 @@ from keras.datasets import mnist
 import matplotlib.pyplot as plt
 from PIL import Image
 from datetime import datetime
-
+from algorithm.TrainingHistory import TrainingHistory
+# from TrainingHistory import TrainingHistory
 
 class DigitRecognizer(object):
 
@@ -16,18 +17,17 @@ class DigitRecognizer(object):
     #############################################
 
     WIDTH, HEIGHT, SCALE_FACTOR = 28, 28, 255
-    ITERATIONS=200 # epochs
+    EPOCHS=200 # iterations
     ALPHA=0.15 # learning_rate
     LEARNING_RATE = 0.01
     MODAL_FILE_NAME= os.path.join("results", "trained_params.pkl")
-    TRAINING_HISTORY= os.path.join("results", "training_history.jpg")
 
     #############################################
     # constructor
     #############################################
 
     def __init__(self):
-        pass
+        self.training_history = TrainingHistory(DigitRecognizer.EPOCHS)
 
     #############################################
     # public methods
@@ -44,9 +44,10 @@ class DigitRecognizer(object):
         X_test = X_test.reshape(X_test.shape[0],INPUT_NEURONS).T  / SCALE_FACTOR
         return (X_train, Y_train), (X_test, Y_test)
 
-    def train(self, X_train, Y_train, X_test, Y_test, iterations=ITERATIONS, alpha=ALPHA, file_path=MODAL_FILE_NAME):
+    def train(self, X_train, Y_train, X_test, Y_test, epochs=EPOCHS, alpha=ALPHA, file_path=MODAL_FILE_NAME):
+        self.training_history.init(epochs)
         timer_start = datetime.now()
-        gradiant = self.__gradient_descent(X_train, Y_train, X_test, Y_test, alpha, iterations)
+        gradiant = self.__gradient_descent(X_train, Y_train, X_test, Y_test, alpha, epochs)
         try:
             while True:
                 val = next(gradiant)
@@ -122,13 +123,12 @@ class DigitRecognizer(object):
         db1 = 1 / m * np.sum(dZ1)
         return dW1, db1, dW2, db2
 
-    def __gradient_descent(self, X_train, Y_train, X_val, Y_val, alpha=ALPHA, iterations=ITERATIONS):
+    def __gradient_descent(self, X_train, Y_train, X_val, Y_val, alpha=ALPHA, epochs=EPOCHS):
         size_train, m_train = X_train.shape
         size_val, m_val = X_val.shape
         W1, b1, W2, b2 = self.__init_params(size_train)
         
-        history = { "iterations": [], "train": { "accuracy": [], "loss": []}, "validation": { "accuracy": [], "loss": []}}
-        for i in range(iterations):
+        for i in range(epochs):
             # Training
             Z1, A1, Z2, A2 = self.__forward_propagation(W1, b1, W2, b2, X_train)
             # delta
@@ -137,49 +137,24 @@ class DigitRecognizer(object):
 
             # Validation
             Z1_val, A1_val, Z2_val, A2_val = self.__forward_propagation(W1, b1, W2, b2, X_val)
-
-            if (i + 1) % int(iterations / 10) == 0:
+            epoch = i+1
+            if epoch % int(epochs / 10) == 0:
                 # digit, accuracy, predictions          train_prediction
-                train_prediction  = DigitRecognizer.get_predictions(A2)#[1]
+                train_prediction  = DigitRecognizer.get_predictions(A2)
                 train_accuracy = DigitRecognizer.get_accuracy(train_prediction, Y_train)
                 train_loss = DigitRecognizer.get_loss(A2, Y_train, m_train)
                 val_loss = DigitRecognizer.get_loss(A2_val, Y_val, m_val)
-                val_prediction = DigitRecognizer.get_predictions(A2_val)#[1]
+                val_prediction = DigitRecognizer.get_predictions(A2_val)
                 val_accuracy = DigitRecognizer.get_accuracy(val_prediction, Y_val)
-                history["iterations"].append(i+1)
-                history["validation"]["loss"].append(val_loss)
-                history["validation"]["accuracy"].append(val_accuracy)
-                history["train"]["loss"].append(train_loss)
-                history["train"]["accuracy"].append(train_accuracy)
-                yield history, W1, b1, W2, b2
-                # yield (i+1, train_accuracy, train_loss, val_accuracy, val_loss)
-                # print(f"Iteration: {i + 1} / {iterations}")
-                # print(f'Training Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}')
-                # print(f'Validation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}')
-            
-        yield history, W1, b1, W2, b2
-        # return W1, b1, W2, b2
 
-    def show_evaluation(self, history, filename=TRAINING_HISTORY):
-        # iterations = history["iterations"][-1]
-        # Create a single figure with two subplots
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-        # Plot training & validation accuracy values
-        ax1.plot(history["train"]['accuracy'])
-        ax1.plot(history["validation"]["accuracy"])
-        ax1.set_title('Model accuracy')
-        ax1.set_ylabel('Accuracy')
-        ax1.set_xlabel('Epoch')
-        ax1.legend(['Train', 'Validation'], loc='upper left')
-        # Plot training & validation loss values
-        ax2.plot(history["train"]["loss"])
-        ax2.plot(history["validation"]["loss"])
-        ax2.set_title('Model loss')
-        ax2.set_ylabel('Loss')
-        ax2.set_xlabel('Epoch')
-        ax2.legend(['Train', 'Validation'], loc='upper left')
-        plt.savefig(filename)
-        plt.show()
+                self.training_history.append_history(epoch, train_accuracy, train_loss, val_accuracy, val_loss)
+
+                yield self.training_history.get_history(), W1, b1, W2, b2
+            
+        yield self.training_history.get_history(), W1, b1, W2, b2
+
+    def show_evaluation(self):
+        self.training_history.show_evaluation()
 
     #############################################
     # static methods
@@ -234,21 +209,22 @@ class DigitRecognizer(object):
 if __name__ == '__main__':
     digit_recognizer = DigitRecognizer()
 
-    iterations = 10
+    epochs = 10
     (X_train, Y_train), (X_test, Y_test) = digit_recognizer.load_data()
-    training = digit_recognizer.train(X_train, Y_train, X_test, Y_test, iterations)
+    training = digit_recognizer.train(X_train, Y_train, X_test, Y_test, epochs)
     try:
         while True:
             history, W1, b1, W2, b2 = next(training)
-            train_accuracy = history["train"]["accuracy"][-1]
-            train_loss = history["train"]["loss"][-1]
-            val_accuracy = history["validation"]["accuracy"][-1]
-            val_loss = history["validation"]["loss"][-1]
-            i = history["iterations"][-1]
-            text = f"""Iteration: {i} / {iterations}\nTraining Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}\nValidation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}"""
+            iterations, training_accuracy, training_loss, validation_accuracy, validation_loss = history
+            i = iterations[-1]
+            train_accuracy = training_accuracy[-1]
+            train_loss = training_loss[-1]
+            val_accuracy = validation_accuracy[-1]
+            val_loss = validation_loss[-1]
+            text = f"""Iteration: {i} / {epochs}\nTraining Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}\nValidation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}"""
             print(text)
     except StopIteration:
-        digit_recognizer.show_evaluation(history)
+        digit_recognizer.show_evaluation()
 
     # digit_recognizer.load_model()
 

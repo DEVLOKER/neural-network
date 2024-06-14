@@ -93,7 +93,7 @@ class MainWindow(QMainWindow):
         self.train_button.setText("Train model and save it (.pkl)")
 
     def trainFinished(self, history):
-        self.digit_recognizer.show_evaluation(history)
+        self.digit_recognizer.show_evaluation()
 
     def handleLoad(self):
         (fname, _) = QFileDialog.getOpenFileName(
@@ -126,11 +126,12 @@ class ParallelWorker(QThread):
         try:
             while True:
                 history, W1, b1, W2, b2 = next(training)
-                train_accuracy = history["train"]["accuracy"][-1]
-                train_loss = history["train"]["loss"][-1]
-                val_accuracy = history["validation"]["accuracy"][-1]
-                val_loss = history["validation"]["loss"][-1]
-                i = history["iterations"][-1]
+                iterations, training_accuracy, training_loss, validation_accuracy, validation_loss = history
+                i = iterations[-1]
+                train_accuracy = training_accuracy[-1]
+                train_loss = training_loss[-1]
+                val_accuracy = validation_accuracy[-1]
+                val_loss = validation_loss[-1]
                 text = f"""Iteration: {i} / {self.iterations}\nTraining Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}\nValidation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}"""
                 print(text)
                 self.label.setText(f"{self.label.text()}\n{text}")
