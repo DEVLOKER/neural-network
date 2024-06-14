@@ -92,8 +92,8 @@ class MainWindow(QMainWindow):
         self.canvas.set_digit_recognizer(self.digit_recognizer)
         self.train_button.setText("Train model and save it (.pkl)")
 
-    def trainFinished(self, history, iterations):
-        self.digit_recognizer.show_evaluation(history, iterations)
+    def trainFinished(self, history):
+        self.digit_recognizer.show_evaluation(history)
 
     def handleLoad(self):
         (fname, _) = QFileDialog.getOpenFileName(
@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
         
 
 class ParallelWorker(QThread):
-    result_signal = pyqtSignal(object, int)
+    result_signal = pyqtSignal(object)
 
     def __init__(self, scroll_area: QScrollArea, label: QLabel, iterations: int, digit_recognizer: DigitRecognizer):
         super().__init__()
@@ -140,4 +140,4 @@ class ParallelWorker(QThread):
                 self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
         except StopIteration:
             pass
-        self.result_signal.emit(history, self.iterations)
+        self.result_signal.emit(history)

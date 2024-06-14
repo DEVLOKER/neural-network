@@ -1,16 +1,12 @@
 import os
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-import pandas as pd
 import numpy as np
 import pickle
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 from PIL import Image
 from datetime import datetime
-import random
-import pathlib
-
 
 class DigitRecognizer(object):
 
@@ -49,9 +45,7 @@ class DigitRecognizer(object):
 
     def train(self, X_train, Y_train, X_test, Y_test, iterations=ITERATIONS, alpha=ALPHA, file_path=MODAL_FILE_NAME):
         timer_start = datetime.now()
-        # (i+1, train_accuracy, train_loss, val_accuracy, val_loss)
         gradiant = self.__gradient_descent(X_train, Y_train, X_test, Y_test, alpha, iterations)
-        print(gradiant)
         try:
             while True:
                 val = next(gradiant)
@@ -60,13 +54,13 @@ class DigitRecognizer(object):
         except StopIteration:
             pass
 
-        # W1, b1, W2, b2 = self.__gradient_descent(X_train, Y_train, X_test, Y_test, alpha, iterations)
         self.weight_1, self.bias_1, self.weight_2, self.bias_2 = W1, b1, W2, b2
         # with open(file_path,"wb") as dump_file:
         #     pickle.dump((W1, b1, W2, b2),dump_file)
         timer_end = datetime.now()
         difference = timer_end - timer_start
         print("The model has successfully trained in {:2f} seconds.".format(difference.total_seconds()))
+        # self.show_evaluation(history)
 
     def load_model(self, file_path=MODAL_FILE_NAME):
         with open(file_path,"rb") as dump_file:
@@ -162,11 +156,11 @@ class DigitRecognizer(object):
                 # print(f'Training Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}')
                 # print(f'Validation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}')
             
-        # self.show_evaluation(history, iterations)
         yield history, W1, b1, W2, b2
         # return W1, b1, W2, b2
 
-    def show_evaluation(self, history, iterations, filename=TRAINING_HISTORY):
+    def show_evaluation(self, history, filename=TRAINING_HISTORY):
+        # iterations = history["iterations"][-1]
         # Create a single figure with two subplots
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
         # Plot training & validation accuracy values
@@ -211,11 +205,6 @@ class DigitRecognizer(object):
 
     @staticmethod
     def get_predictions(A2):
-        # A2 = A2.reshape(1, -1)[0] # A2_reshaped
-        # digit = np.argmax(A2) 
-        # accuracy = np.max(A2) * 100
-        # predictions = [(d, a*100) for d, a in enumerate(A2)]
-        # return digit, accuracy, predictions
         return np.argmax(A2, 0)
 
     @staticmethod
@@ -228,7 +217,7 @@ class DigitRecognizer(object):
         return -np.sum(np.log(A2[Y, np.arange(m)]))/ m
     
     @staticmethod
-    def process_image(img):
+    def process_image(img: Image):
         img = img.resize((DigitRecognizer.WIDTH,DigitRecognizer.HEIGHT)) # resize image to 28x28 pixels
         img = img.convert('L') # convert rgb to grayscale
         img_array = np.array(img)
@@ -242,26 +231,24 @@ class DigitRecognizer(object):
 if __name__ == '__main__':
     digit_recognizer = DigitRecognizer()
 
+    iterations = 10
     (X_train, Y_train), (X_test, Y_test) = digit_recognizer.load_data()
-    tr = digit_recognizer.train(X_train, Y_train, X_test, Y_test, iterations=10)
-    # digit_recognizer.load_model()
-
+    training = digit_recognizer.train(X_train, Y_train, X_test, Y_test, iterations)
     try:
         while True:
-            history, W1, b1, W2, b2 = next(tr)
-            iterations = 10
+            history, W1, b1, W2, b2 = next(training)
             train_accuracy = history["train"]["accuracy"][-1]
             train_loss = history["train"]["loss"][-1]
             val_accuracy = history["validation"]["accuracy"][-1]
             val_loss = history["validation"]["loss"][-1]
-            i = len(history["train"]["accuracy"])
+            i = history["iterations"][-1]
             text = f"""Iteration: {i} / {iterations}\nTraining Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}\nValidation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}"""
             print(text)
-            # print(f"Iteration: {i + 1} / {iterations}")
-            # print(f'Training Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}')
-            # print(f'Validation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}')
     except StopIteration:
-        pass
+        digit_recognizer.show_evaluation(history)
+
+    # digit_recognizer.load_model()
+
 
     # # # predict
     # for i in range(1,1+1):
