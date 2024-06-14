@@ -31,6 +31,9 @@ class MainWindow(QMainWindow):
         # accurancy
         accurancy_label = QLabel("Target accurancy")
         self.accurancy_input = QLineEdit(f"{NeuralNetworkModel.TARGET_ACCURANCY}") # QDoubleSpinBox()
+        # learning rate
+        learning_rate_label = QLabel("learning Rate")
+        self.learning_rate_input = QLineEdit(f"{NeuralNetworkModel.LEARNING_RATE}") # QDoubleSpinBox()
         # load button
         self.load_button = QPushButton("Load model (.pkl)")
         self.load_button.clicked.connect(self.handleLoad)
@@ -45,6 +48,8 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self.iterations_input)
         right_layout.addWidget(accurancy_label)
         right_layout.addWidget(self.accurancy_input)
+        right_layout.addWidget(learning_rate_label)
+        right_layout.addWidget(self.learning_rate_input)
         right_layout.addWidget(self.train_button)
         right_layout.addWidget(self.load_button)
         right_layout.addWidget(self.scroll_area)
@@ -98,11 +103,15 @@ class MainWindow(QMainWindow):
             target_accurancy = float(self.accurancy_input.text())
         except Exception:
             target_accurancy = None
+        try:
+            learning_rate = float(self.learning_rate_input.text())
+        except Exception:
+            learning_rate = None
         
         self.train_button.setText("Training model, please wait ...")
         self.training_label.setText("")
         self.model = NeuralNetworkModel()
-        self.worker = ParallelWorker(self.scroll_area, self.training_label, iterations, target_accurancy, self.model)
+        self.worker = ParallelWorker(self.scroll_area, self.training_label, iterations, target_accurancy, learning_rate, self.model)
         self.worker.result_signal.connect(self.trainFinished)
         self.worker.start()
         self.canvas.set_model(self.model)
@@ -128,22 +137,21 @@ class MainWindow(QMainWindow):
 class ParallelWorker(QThread):
     result_signal = pyqtSignal()
 
-    def __init__(self, scroll_area: QScrollArea, label: QLabel, iterations: int, target_accurancy: float, model: NeuralNetworkModel):
+    def __init__(self, scroll_area: QScrollArea, label: QLabel, iterations: int, target_accurancy: float, learning_rate: float, model: NeuralNetworkModel):
         super().__init__()
         self.scroll_area = scroll_area
         self.label = label
         self.iterations = iterations
         self.target_accurancy = target_accurancy
+        self.learning_rate = learning_rate
         self.model = model
 
 
     def run(self):
-        # (X_train, Y_train), (X_test, Y_test) = self.model.load_data()
-        training = self.model.train(target_accurancy=self.target_accurancy, epochs=self.iterations)
+        training = self.model.train(target_accurancy=self.target_accurancy, epochs=self.iterations, learning_rate=self.learning_rate)
         try:
             while True:
                 text, epoch, train_accurancy, train_loss, val_accurancy, val_loss = next(training)
-                # print(text)
                 self.label.setText(f"{self.label.text()}\n{text}")
                 # Scroll to the bottom of the QScrollArea
                 sleep(0.1)

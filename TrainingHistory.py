@@ -89,4 +89,5 @@ class TrainingHistory(object):
         ax2.legend(['Training', 'Validation'], loc='upper left')
         
         plt.savefig(filename)
+        plt.title("Training vs Validation")
         plt.show()

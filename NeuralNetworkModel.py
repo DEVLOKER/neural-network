@@ -70,10 +70,10 @@ class NeuralNetworkModel(object):
         self.init_params()
         self.training_history.init(epochs)
         train_accurancy = 0
-        epoch = 1
+        epoch = 0
         timer_start = datetime.now()
         
-        while (epochs != None and epoch <= epochs) or (target_accurancy != None and train_accurancy < target_accurancy):
+        while (epochs != None and epoch < epochs) or (target_accurancy != None and train_accurancy < target_accurancy):
             # training
             Z1, A1, Z2, A2 = self.forward_propagation(X_train)
             train_accurancy, train_loss = self.evaluate_model(A2, Y_train)
