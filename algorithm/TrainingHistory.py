@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 class TrainingHistory(object):
 
-    TRAINING_HISTORY= os.path.join("results", "training_history.jpg")
+    TRAINING_HISTORY= os.path.join("training", "training_history.jpg")
 
     def __init__(self):
         self.init()
@@ -24,7 +24,7 @@ class TrainingHistory(object):
         self.validation_loss.append(validation_loss)
         text = f"""Iteration: {epoch} / {self.total_epochs if self.total_epochs != None else epoch}\nTraining Accuracy: {training_accuracy:.3%} \t | \t Training Loss: {training_loss:.3f}\nValidation Accuracy: {validation_accuracy:.3%} \t | \t Validation Loss: {validation_loss:.3f}\n"""
         print(text)
-
+        return text
     def set_total_epochs(self, total_epochs):
         self.total_epochs = total_epochs
 

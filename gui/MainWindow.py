@@ -1,15 +1,16 @@
 from PyQt6.QtWidgets import QWidget, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QScrollArea, QLabel, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox
-from algorithm.DigitRecognizer import DigitRecognizer
+from algorithm.NeuralNetworkModel import NeuralNetworkModel
 from gui.PaintWidget import PaintWidget
+from PyQt6.QtGui import QFont
 from PyQt6.QtCore import QThread, pyqtSignal
 from time import sleep
 
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, digit_recognizer: DigitRecognizer=None):
+    def __init__(self):#, model: NeuralNetworkModel=None):
         super().__init__()
-        self.digit_recognizer = digit_recognizer
+        self.model = None
         self.initUI()
 
     def initUI(self):
@@ -25,7 +26,8 @@ class MainWindow(QMainWindow):
         self.train_button = QPushButton("Train model and save it as (.pkl)")
         self.train_button.clicked.connect(self.handleTrain)
         # input iterations
-        self.iterations_input = QLineEdit("2000") # QDoubleSpinBox()
+        self.iterations_input = QLineEdit(f"{NeuralNetworkModel.EPOCHS}") # QDoubleSpinBox()
+        self.accurancy_input = QLineEdit(f"{NeuralNetworkModel.TARGET_ACCURANCY}") # QDoubleSpinBox()
         # self.iterations_input.valueChanged.connect(self.value_changed)
         # load button
         self.load_button = QPushButton("Load model (.pkl)")
@@ -38,6 +40,7 @@ class MainWindow(QMainWindow):
         self.scroll_area.setWidgetResizable(True)
 
         right_layout.addWidget(self.iterations_input)
+        right_layout.addWidget(self.accurancy_input)
         right_layout.addWidget(self.train_button)
         right_layout.addWidget(self.load_button)
         right_layout.addWidget(self.scroll_area)
@@ -47,24 +50,26 @@ class MainWindow(QMainWindow):
         center_layout = QVBoxLayout()
         center_widget.setLayout(center_layout)
         # results text
-        results_label = QLabel("draw a number, and click on 'Recognize'") # font=("Helvetica", 48)
+        results_label = QLabel("")
+        results_label.setFont(QFont('Helvetica', 32))
         predict_label = QLabel("")
         center_layout.addWidget(results_label)
         center_layout.addWidget(predict_label)
 
         # Left widget
         left_widget = QWidget()
-        left_widget.setFixedSize(300,300)
         left_layout = QVBoxLayout()
         left_layout.setContentsMargins(0, 0, 0, 0)
+        info_label = QLabel("draw a number, and click on 'Recognize'")
         # put the canvas in the left widget
-        self.canvas = PaintWidget(self.digit_recognizer, results_label, predict_label)
+        self.canvas = PaintWidget(self.model, results_label, predict_label)
         # clear button
         clear_button = QPushButton("Clear")
         clear_button.clicked.connect(self.canvas.clear)
         # recognize button
         recognize_button = QPushButton('Recognize')
         recognize_button.clicked.connect(self.canvas.classify_handwriting)
+        left_layout.addWidget(info_label)
         left_layout.addWidget(self.canvas)
         left_layout.addWidget(recognize_button)
         left_layout.addWidget(clear_button)
@@ -82,18 +87,18 @@ class MainWindow(QMainWindow):
 
     def handleTrain(self):
         iterations = int(self.iterations_input.text())
+        target_accurancy = int(self.iterations_input.text())
         self.train_button.setText("Training model, please wait ...")
-        self.digit_recognizer = DigitRecognizer()
         self.training_label.setText("")
-
-        self.worker = ParallelWorker(self.scroll_area, self.training_label, iterations, self.digit_recognizer)
+        self.model = NeuralNetworkModel()
+        self.worker = ParallelWorker(self.scroll_area, self.training_label, iterations, target_accurancy, self.model)
         self.worker.result_signal.connect(self.trainFinished)
         self.worker.start()
-        self.canvas.set_digit_recognizer(self.digit_recognizer)
+        self.canvas.set_model(self.model)
         self.train_button.setText("Train model and save it (.pkl)")
 
-    def trainFinished(self, history):
-        self.digit_recognizer.show_evaluation()
+    def trainFinished(self):
+        self.model.show_evaluation()
 
     def handleLoad(self):
         (fname, _) = QFileDialog.getOpenFileName(
@@ -103,42 +108,35 @@ class MainWindow(QMainWindow):
             "trained_params (*.pkl);;",
         )
         self.train_button.setText(f"Loading  model '{_}'")
-        self.digit_recognizer = DigitRecognizer()
-        self.digit_recognizer.load_model(file_path=fname)
-        self.canvas.set_digit_recognizer(self.digit_recognizer)
+        self.model = NeuralNetworkModel()
+        self.model.load_model(file_path=fname)
+        self.canvas.set_model(self.model)
         self.train_button.setText("Load model (.pkl)")
         
 
 class ParallelWorker(QThread):
     result_signal = pyqtSignal(object)
 
-    def __init__(self, scroll_area: QScrollArea, label: QLabel, iterations: int, digit_recognizer: DigitRecognizer):
+    def __init__(self, scroll_area: QScrollArea, label: QLabel, iterations: int, target_accurancy: float, model: NeuralNetworkModel):
         super().__init__()
         self.scroll_area = scroll_area
         self.label = label
         self.iterations = iterations
-        self.digit_recognizer = digit_recognizer
+        self.target_accurancy = target_accurancy
+        self.model = model
 
 
     def run(self):
-        (X_train, Y_train), (X_test, Y_test) = self.digit_recognizer.load_data()
-        training = self.digit_recognizer.train(X_train, Y_train, X_test, Y_test, self.iterations)
+        # (X_train, Y_train), (X_test, Y_test) = self.model.load_data()
+        training = self.model.train(target_accurancy=self.target_accurancy, epochs=self.iterations)
         try:
             while True:
-                history, W1, b1, W2, b2 = next(training)
-                iterations, training_accuracy, training_loss, validation_accuracy, validation_loss = history
-                i = iterations[-1]
-                train_accuracy = training_accuracy[-1]
-                train_loss = training_loss[-1]
-                val_accuracy = validation_accuracy[-1]
-                val_loss = validation_loss[-1]
-                text = f"""Iteration: {i} / {self.iterations}\nTraining Accuracy: {train_accuracy:.3%} | Training Loss: {train_loss:.4f}\nValidation Accuracy: {val_accuracy:.3%} | Validation Loss: {val_loss:.4f}"""
+                text, epoch, train_accurancy, train_loss, val_accurancy, val_loss = next(training)
                 print(text)
                 self.label.setText(f"{self.label.text()}\n{text}")
                 # Scroll to the bottom of the QScrollArea
-                
                 sleep(0.1)
                 self.scroll_area.verticalScrollBar().setValue(self.scroll_area.verticalScrollBar().maximum())
         except StopIteration:
             pass
-        self.result_signal.emit(history)
+        self.result_signal.emit()

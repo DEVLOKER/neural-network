@@ -1,19 +1,20 @@
 
 from PyQt6.QtWidgets import QWidget, QDialog, QDialogButtonBox, QLabel, QVBoxLayout
-from PyQt6.QtGui import QPainter, QPen, QImage, QFont, QCursor
+from PyQt6.QtGui import QPainter, QPen, QImage, QCursor
 from PyQt6.QtCore import Qt
 from PIL import ImageQt
-from algorithm.DigitRecognizer import DigitRecognizer
+from algorithm.NeuralNetworkModel import NeuralNetworkModel
 
 
 
 class PaintWidget(QWidget):
-    def __init__(self, digit_recognizer: DigitRecognizer, results_label, predict_label, width=400, height=400):
+    def __init__(self, model: NeuralNetworkModel, results_label, predict_label, width=400, height=400):
         super().__init__()
-        self.digit_recognizer = digit_recognizer
+        self.model = model
         self.results_label = results_label
         self.predict_label = predict_label
         self.predict_label.setWordWrap(True)
+        self.setFixedSize(300,300)
         self.initUI()
 
     def initUI(self):
@@ -21,11 +22,11 @@ class PaintWidget(QWidget):
         self.setMouseTracking(True)
         self.points = []
         # self.results_label.setFont(QFont('Arial', 10)) 
-        # model_json, model_summary = self.digit_recognizer.log()
+        # model_json, model_summary = self.model.log()
         # self.results_label.setText(model_summary)
         
-    def set_digit_recognizer(self, digit_recognizer):
-        self.digit_recognizer = digit_recognizer
+    def set_model(self, model):
+        self.model = model
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -79,14 +80,13 @@ class PaintWidget(QWidget):
         self.update()
 
     def classify_handwriting(self):
-        if self.digit_recognizer is None:
+        if self.model is None:
             dlg = CustomDialog("a error occurred", "please load or train a model first!")
             dlg.exec()
             return
         img = self.to_image()
-        img = DigitRecognizer.process_image(img)
-        digit, accuracy, predictions = self.digit_recognizer.make_predictions(img)
-        self.results_label.setFont(QFont('Helvetica', 40))
+        img = NeuralNetworkModel.process_image(img)
+        digit, accuracy, predictions = self.model.make_predictions(img)
         self.results_label.setText(' digit : {} \n accuracy: {:.2f}%'.format(digit, accuracy))
         predictions_text = ["{} => {:.2f}%".format(digit, accuracy) for (digit, accuracy) in predictions]
         self.predict_label.setText("\n".join(predictions_text))

@@ -1,11 +1,12 @@
 import os
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 import pickle
 from datetime import datetime
 import numpy as np
 from numpy import (ndarray)
 from PIL import Image
 from keras.datasets import mnist
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 # from algorithm.TrainingHistory import TrainingHistory
 from TrainingHistory import TrainingHistory
 
@@ -17,9 +18,9 @@ class NeuralNetworkModel(object):
     X_HEIGHT = 28
     INPUT_NEURONS_SIZE = 28 * 28 # Input Layer neurons (784)
     X_SCALE_FACTOR = 255
-    LEARNING_RATE = 0.01
+    LEARNING_RATE = 0.15 # 0.01
     EPOCHS=100 # iterations
-    TARGET_ACCURANCY=0.99 # 
+    TARGET_ACCURANCY=0.9 # 
     MODAL_FILE_NAME= os.path.join("training", "trained_params.pkl")
 
     def __init__(self):
@@ -68,7 +69,7 @@ class NeuralNetworkModel(object):
         # input train & test images
         (X_train, Y_train), (X_test, Y_test) = self.load_data()
         self.init_params()
-        self.training_history.init()
+        self.training_history.init(epochs)
         train_accurancy = 0
         epoch = 0
         timer_start = datetime.now()
@@ -83,8 +84,8 @@ class NeuralNetworkModel(object):
             val_accurancy, val_loss = self.evaluate_model(A2_val, Y_test)
             # save histrory each 10 iterations
             if epoch % 10 == 0:
-                self.training_history.append_history(epoch, train_accurancy, train_loss, val_accurancy, val_loss)
-                yield epoch, train_accurancy, train_loss, val_accurancy, val_loss
+                text = self.training_history.append_history(epoch, train_accurancy, train_loss, val_accurancy, val_loss)
+                yield text , epoch, train_accurancy, train_loss, val_accurancy, val_loss
             epoch +=1
         timer_end = datetime.now()
         difference = timer_end - timer_start
@@ -178,11 +179,11 @@ if __name__ == '__main__':
     model = NeuralNetworkModel()
     
     # # model.train(epochs=100, learning_rate=0.15)
-    training = model.train(target_accurancy=0.9, learning_rate=0.15)
+    training = model.train(epochs=10, target_accurancy=0.9, learning_rate=0.15)
     try:
         while True:
-            epoch, train_accurancy, train_loss, val_accurancy, val_loss = next(training)
-            # print(f'Epoch {epoch}, \tLoss: {loss:.3f}, \tAccuracy: {accuracy:.3f}')
+            text, epoch, train_accurancy, train_loss, val_accurancy, val_loss = next(training)
+            # print(text)
     except StopIteration:
         model.save_model()
         model.show_evaluation()

@@ -1,29 +1,12 @@
-import sys
-from PyQt6.QtWidgets import QApplication
-from gui.MainWindow import MainWindow
+import os
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
+import sys
 sys.path.insert(0, '/algorithm')
 sys.path.insert(0, '/gui')
 
-
-# def fancy_generator():
-#     my_list = [1, 2, 3]
-#     for i in my_list:
-#             yield i * 2
-
-# mygen = fancy_generator()
-# print(mygen)
-# try:
-#     while True:
-#         val = next(mygen)
-#         print(val)
-# except StopIteration:
-#     pass
-# while True:
-#     val = next(mygen)
-#     if val is None:
-#         break
-#     print(val)
+from PyQt6.QtWidgets import QApplication
+from gui.MainWindow import MainWindow
 
 
 if __name__ == '__main__':
