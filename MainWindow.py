@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QScrollArea, QLabel, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox
 from NeuralNetworkModel import NeuralNetworkModel
-from PaintWidget import PaintWidget
+from PaintWidget import *
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import QThread, pyqtSignal
 from time import sleep
@@ -108,6 +108,11 @@ class MainWindow(QMainWindow):
         except Exception:
             learning_rate = None
         
+        if learning_rate == None:
+            dlg = CustomDialog("a error occurred", "please type a valid learning rate parameter (must be float)!")
+            dlg.exec()
+            return
+                
         self.train_button.setText("Training model, please wait ...")
         self.training_label.setText("")
         self.model = NeuralNetworkModel()

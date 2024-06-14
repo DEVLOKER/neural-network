@@ -51,20 +51,25 @@ class TrainingHistory(object):
         return self.epochs, self.training_accuracy, self.training_loss, self.validation_accuracy, self.validation_loss
     
 
-    def get_history_by_epoch(self, epoch):
-        text = self.get_current_history_string(epoch)
-        return text, self.epochs[epoch], self.training_accuracy[epoch], self.training_loss[epoch], self.validation_accuracy[epoch], self.validation_loss[epoch]
+    def get_history_by_epoch(self, index):
+        try:
+            epoch = self.epochs[index]
+            training_accuracy = self.training_accuracy[index]
+            training_loss = self.training_loss[index]
+            validation_accuracy = self.validation_accuracy[index]
+            validation_loss = self.validation_loss[index]
+            text = self.get_current_history_string(epoch, training_accuracy, training_loss, validation_accuracy, validation_loss)
+            return text, epoch, training_accuracy, training_loss, validation_accuracy, validation_loss
+        except Exception:
+            return "", 0, 0, 0, 0, 0
+
+        
     
     def get_last_history_epoch(self):
         return self.get_history_by_epoch(-1)
     
-    def get_current_history_string(self, index=-1):
-        epoch = self.epochs[index]
+    def get_current_history_string(self, epoch, training_accuracy, training_loss, validation_accuracy, validation_loss):
         total_epochs = self.total_epochs if self.total_epochs != None else epoch
-        training_accuracy = self.training_accuracy[index]
-        training_loss = self.training_loss[index]
-        validation_accuracy = self.validation_accuracy[index]
-        validation_loss = self.validation_loss[index]
         text = f"""Iteration: {epoch} / {total_epochs}\nTraining Accuracy: {training_accuracy:.3%} \t Training Loss: {training_loss:.3f}\nValidation Accuracy: {validation_accuracy:.3%} \t Validation Loss: {validation_loss:.3f}\n"""
         return text
 
