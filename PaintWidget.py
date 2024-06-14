@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QWidget, QDialog, QDialogButtonBox, QLabel, QVBoxLay
 from PyQt6.QtGui import QPainter, QPen, QImage, QCursor
 from PyQt6.QtCore import Qt
 from PIL import ImageQt
-from algorithm.NeuralNetworkModel import NeuralNetworkModel
+from NeuralNetworkModel import NeuralNetworkModel
 
 
 

@@ -22,9 +22,10 @@ class TrainingHistory(object):
         self.training_loss.append(training_loss)
         self.validation_accuracy.append(validation_accuracy)
         self.validation_loss.append(validation_loss)
-        text = f"""Iteration: {epoch} / {self.total_epochs if self.total_epochs != None else epoch}\nTraining Accuracy: {training_accuracy:.3%} \t | \t Training Loss: {training_loss:.3f}\nValidation Accuracy: {validation_accuracy:.3%} \t | \t Validation Loss: {validation_loss:.3f}\n"""
+        text, _, _, _ , _, _ = self.get_last_history_epoch()
         print(text)
-        return text
+        return text, _, _, _ , _, _ 
+
     def set_total_epochs(self, total_epochs):
         self.total_epochs = total_epochs
 
@@ -51,11 +52,21 @@ class TrainingHistory(object):
     
 
     def get_history_by_epoch(self, epoch):
-        return self.epochs[epoch], self.training_accuracy[epoch], self.training_loss[epoch], self.validation_accuracy[epoch], self.validation_loss[epoch]
+        text = self.get_current_history_string(epoch)
+        return text, self.epochs[epoch], self.training_accuracy[epoch], self.training_loss[epoch], self.validation_accuracy[epoch], self.validation_loss[epoch]
     
     def get_last_history_epoch(self):
         return self.get_history_by_epoch(-1)
     
+    def get_current_history_string(self, index=-1):
+        epoch = self.epochs[index]
+        total_epochs = self.total_epochs if self.total_epochs != None else epoch
+        training_accuracy = self.training_accuracy[index]
+        training_loss = self.training_loss[index]
+        validation_accuracy = self.validation_accuracy[index]
+        validation_loss = self.validation_loss[index]
+        text = f"""Iteration: {epoch} / {total_epochs}\nTraining Accuracy: {training_accuracy:.3%} \t Training Loss: {training_loss:.3f}\nValidation Accuracy: {validation_accuracy:.3%} \t Validation Loss: {validation_loss:.3f}\n"""
+        return text
 
     def show_evaluation(self, filename=TRAINING_HISTORY):
         # Create a single figure with two subplots

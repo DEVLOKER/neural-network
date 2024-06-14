@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QScrollArea, QLabel, QFileDialog, QLineEdit, QSpinBox, QDoubleSpinBox
-from algorithm.NeuralNetworkModel import NeuralNetworkModel
-from gui.PaintWidget import PaintWidget
+from NeuralNetworkModel import NeuralNetworkModel
+from PaintWidget import PaintWidget
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import QThread, pyqtSignal
 from time import sleep
@@ -25,10 +25,12 @@ class MainWindow(QMainWindow):
         # train button
         self.train_button = QPushButton("Train model and save it as (.pkl)")
         self.train_button.clicked.connect(self.handleTrain)
-        # input iterations
+        # iterations
+        iterations_label = QLabel("Iterations (Epochs)")
         self.iterations_input = QLineEdit(f"{NeuralNetworkModel.EPOCHS}") # QDoubleSpinBox()
+        # accurancy
+        accurancy_label = QLabel("Target accurancy")
         self.accurancy_input = QLineEdit(f"{NeuralNetworkModel.TARGET_ACCURANCY}") # QDoubleSpinBox()
-        # self.iterations_input.valueChanged.connect(self.value_changed)
         # load button
         self.load_button = QPushButton("Load model (.pkl)")
         self.load_button.clicked.connect(self.handleLoad)
@@ -39,7 +41,9 @@ class MainWindow(QMainWindow):
         self.scroll_area.setWidget(self.training_label)
         self.scroll_area.setWidgetResizable(True)
 
+        right_layout.addWidget(iterations_label)
         right_layout.addWidget(self.iterations_input)
+        right_layout.addWidget(accurancy_label)
         right_layout.addWidget(self.accurancy_input)
         right_layout.addWidget(self.train_button)
         right_layout.addWidget(self.load_button)
@@ -86,8 +90,15 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(right_widget)
 
     def handleTrain(self):
-        iterations = int(self.iterations_input.text())
-        target_accurancy = int(self.iterations_input.text())
+        try:
+            iterations = int(self.iterations_input.text()) 
+        except Exception:
+            iterations = None
+        try:
+            target_accurancy = float(self.accurancy_input.text())
+        except Exception:
+            target_accurancy = None
+        
         self.train_button.setText("Training model, please wait ...")
         self.training_label.setText("")
         self.model = NeuralNetworkModel()
@@ -115,7 +126,7 @@ class MainWindow(QMainWindow):
         
 
 class ParallelWorker(QThread):
-    result_signal = pyqtSignal(object)
+    result_signal = pyqtSignal()
 
     def __init__(self, scroll_area: QScrollArea, label: QLabel, iterations: int, target_accurancy: float, model: NeuralNetworkModel):
         super().__init__()
@@ -132,7 +143,7 @@ class ParallelWorker(QThread):
         try:
             while True:
                 text, epoch, train_accurancy, train_loss, val_accurancy, val_loss = next(training)
-                print(text)
+                # print(text)
                 self.label.setText(f"{self.label.text()}\n{text}")
                 # Scroll to the bottom of the QScrollArea
                 sleep(0.1)

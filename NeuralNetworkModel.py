@@ -7,7 +7,6 @@ import numpy as np
 from numpy import (ndarray)
 from PIL import Image
 from keras.datasets import mnist
-# from algorithm.TrainingHistory import TrainingHistory
 from TrainingHistory import TrainingHistory
 
 
@@ -71,9 +70,10 @@ class NeuralNetworkModel(object):
         self.init_params()
         self.training_history.init(epochs)
         train_accurancy = 0
-        epoch = 0
+        epoch = 1
         timer_start = datetime.now()
-        while (epochs != None and epoch < epochs) or (target_accurancy != None and train_accurancy < target_accurancy):
+        
+        while (epochs != None and epoch <= epochs) or (target_accurancy != None and train_accurancy < target_accurancy):
             # training
             Z1, A1, Z2, A2 = self.forward_propagation(X_train)
             train_accurancy, train_loss = self.evaluate_model(A2, Y_train)
@@ -83,14 +83,16 @@ class NeuralNetworkModel(object):
             Z1_val, A1_val, Z2_val, A2_val = self.forward_propagation(X_test)
             val_accurancy, val_loss = self.evaluate_model(A2_val, Y_test)
             # save histrory each 10 iterations
-            if epoch % 10 == 0:
-                text = self.training_history.append_history(epoch, train_accurancy, train_loss, val_accurancy, val_loss)
-                yield text , epoch, train_accurancy, train_loss, val_accurancy, val_loss
+            if epoch % 1 == 0:
+                self.training_history.append_history(epoch, train_accurancy, train_loss, val_accurancy, val_loss)
+                yield self.training_history.get_last_history_epoch()
             epoch +=1
+        
         timer_end = datetime.now()
         difference = timer_end - timer_start
-        self.training_history.set_total_epochs(epoch)
         print(f"The model has successfully trained, {epoch} iterations in {difference.total_seconds():2f} seconds.")
+        self.training_history.set_total_epochs(epoch)
+        yield self.training_history.get_last_history_epoch()
 
     def make_predictions(self, X):
         _, _, _, output = self.forward_propagation(X)
