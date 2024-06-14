@@ -4,11 +4,10 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import numpy as np
 import pickle
 from keras.datasets import mnist
-import matplotlib.pyplot as plt
 from PIL import Image
 from datetime import datetime
-from algorithm.TrainingHistory import TrainingHistory
-# from TrainingHistory import TrainingHistory
+# from algorithm.TrainingHistory import TrainingHistory
+from TrainingHistory import TrainingHistory
 
 class DigitRecognizer(object):
 
@@ -44,10 +43,10 @@ class DigitRecognizer(object):
         X_test = X_test.reshape(X_test.shape[0],INPUT_NEURONS).T  / SCALE_FACTOR
         return (X_train, Y_train), (X_test, Y_test)
 
-    def train(self, X_train, Y_train, X_test, Y_test, epochs=EPOCHS, alpha=ALPHA, file_path=MODAL_FILE_NAME):
+    def train(self, X_train, Y_train, X_test, Y_test, epochs=EPOCHS, learning_rate=LEARNING_RATE, file_path=MODAL_FILE_NAME):
         self.training_history.init(epochs)
         timer_start = datetime.now()
-        gradiant = self.__gradient_descent(X_train, Y_train, X_test, Y_test, alpha, epochs)
+        gradiant = self.__gradient_descent(X_train, Y_train, X_test, Y_test, learning_rate, epochs)
         try:
             while True:
                 val = next(gradiant)
@@ -98,11 +97,11 @@ class DigitRecognizer(object):
         # b2 = np.random.normal(size=(10, 1)) * np.sqrt(1./(784))
         # return W1, b1, W2, b2
 
-    def __update_params(self, W1, b1, W2, b2, dW1, db1, dW2, db2, alpha):
-        W1 = W1 - alpha * dW1
-        b1 = b1 - alpha * db1    
-        W2 = W2 - alpha * dW2  
-        b2 = b2 - alpha * db2    
+    def __update_params(self, W1, b1, W2, b2, dW1, db1, dW2, db2, learning_rate):
+        W1 -= learning_rate * dW1
+        b1 -= learning_rate * db1    
+        W2 -= learning_rate * dW2  
+        b2 -= learning_rate * db2    
         return W1, b1, W2, b2
 
     def __forward_propagation(self, W1, b1, W2, b2, X):
@@ -123,32 +122,26 @@ class DigitRecognizer(object):
         db1 = 1 / m * np.sum(dZ1)
         return dW1, db1, dW2, db2
 
-    def __gradient_descent(self, X_train, Y_train, X_val, Y_val, alpha=ALPHA, epochs=EPOCHS):
-        size_train, m_train = X_train.shape
-        size_val, m_val = X_val.shape
-        W1, b1, W2, b2 = self.__init_params(size_train)
+    def __gradient_descent(self, X_train, Y_train, X_val, Y_val, learning_rate=LEARNING_RATE, epochs=EPOCHS):
+        W1, b1, W2, b2 = self.__init_params(DigitRecognizer.WIDTH*DigitRecognizer.HEIGHT)
         
         for i in range(epochs):
             # Training
             Z1, A1, Z2, A2 = self.__forward_propagation(W1, b1, W2, b2, X_train)
             # delta
             dW1, db1, dW2, db2 = self.__backward_propagation(Z1, A1, Z2, A2, W1, W2, X_train, Y_train)
-            W1, b1, W2, b2 = self.__update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha)
+            W1, b1, W2, b2 = self.__update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, learning_rate)
 
             # Validation
             Z1_val, A1_val, Z2_val, A2_val = self.__forward_propagation(W1, b1, W2, b2, X_val)
             epoch = i+1
             if epoch % int(epochs / 10) == 0:
                 # digit, accuracy, predictions          train_prediction
-                train_prediction  = DigitRecognizer.get_predictions(A2)
-                train_accuracy = DigitRecognizer.get_accuracy(train_prediction, Y_train)
-                train_loss = DigitRecognizer.get_loss(A2, Y_train, m_train)
-                val_loss = DigitRecognizer.get_loss(A2_val, Y_val, m_val)
-                val_prediction = DigitRecognizer.get_predictions(A2_val)
-                val_accuracy = DigitRecognizer.get_accuracy(val_prediction, Y_val)
-
+                train_accuracy = DigitRecognizer.get_accuracy(A2, Y_train)
+                train_loss = DigitRecognizer.get_loss(A2, Y_train)
+                val_loss = DigitRecognizer.get_loss(A2_val, Y_val)
+                val_accuracy = DigitRecognizer.get_accuracy(A2_val, Y_val)
                 self.training_history.append_history(epoch, train_accuracy, train_loss, val_accuracy, val_loss)
-
                 yield self.training_history.get_history(), W1, b1, W2, b2
             
         yield self.training_history.get_history(), W1, b1, W2, b2
@@ -162,7 +155,7 @@ class DigitRecognizer(object):
 
     @staticmethod
     def ReLU(Z): # The rectified linear unit 
-        return np.maximum(Z,0)
+        return np.maximum(0, Z)
 
     @staticmethod
     def derivative_ReLU(Z):
@@ -170,8 +163,8 @@ class DigitRecognizer(object):
 
     @staticmethod
     def softmax(Z):
-        exp = np.exp(Z - np.max(Z))
-        return exp / exp.sum(axis=0)
+        exp_z = np.exp(Z - np.max(Z))
+        return exp_z / exp_z.sum(axis=0)#, keepdims=True)
 
     @staticmethod
     def one_hot(Y):
@@ -184,12 +177,20 @@ class DigitRecognizer(object):
         return np.argmax(A2, 0)
 
     @staticmethod
-    def get_accuracy(predictions, Y):
+    def get_accuracy(A2, Y):
+        predictions = np.argmax(A2, axis=0)
+        # labels = np.argmax(Y, axis=0)
+        # accuracy = np.mean(predictions == labels)
+        # return accuracy
         return np.sum(predictions == Y)/Y.size
 
     @staticmethod
-    def get_loss(A2, Y, m):
-        # m = A2.shape[1] Y.size
+    def get_loss(A2, Y):
+        # m = Y.shape[1]
+        # log_probs = np.multiply(np.log(A2), Y)
+        # cost = -np.sum(log_probs) / m
+        # return np.squeeze(cost)
+        m = Y.size
         return -np.sum(np.log(A2[Y, np.arange(m)]))/ m
     
     @staticmethod
