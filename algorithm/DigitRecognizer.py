@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from datetime import datetime
 
+
 class DigitRecognizer(object):
 
     #############################################
@@ -227,7 +228,9 @@ class DigitRecognizer(object):
         return img_array
 
 
-
+#############################################
+# test in main function
+#############################################
 if __name__ == '__main__':
     digit_recognizer = DigitRecognizer()
 
