@@ -1,10 +1,12 @@
 import os
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
+# from numpy import (ndarray)
 import pickle
 from datetime import datetime
 import numpy as np
-from numpy import (ndarray)
+import matplotlib.pyplot as plt
+import random
 from PIL import Image
 from keras.datasets import mnist
 from TrainingHistory import TrainingHistory
@@ -148,7 +150,7 @@ class NeuralNetworkModel(object):
         return one_hot_Y
         
     @staticmethod
-    def process_image(img: Image): # ndarray : NDArray
+    def prepare_image(img: Image): # ndarray : NDArray
         # resize image to 28x28 pixels
         img = img.resize((NeuralNetworkModel.X_WIDTH, NeuralNetworkModel.X_HEIGHT)) 
         # convert rgb to grayscale
@@ -180,8 +182,7 @@ class NeuralNetworkModel(object):
 if __name__ == '__main__':
     model = NeuralNetworkModel()
     
-    # # # model.train(epochs=100, learning_rate=0.15)
-    # training = model.train(epochs=10, target_accurancy=0.9, learning_rate=0.15)
+    # training = model.train(epochs=100, target_accurancy=0.9, learning_rate=0.15)
     # try:
     #     while True:
     #         text, epoch, train_accurancy, train_loss, val_accurancy, val_loss = next(training)
@@ -194,12 +195,26 @@ if __name__ == '__main__':
     model.load_model()
 
 
-    # Evaluate the model on the test set
+    # # Evaluate the model using jpg files
+    # for i in range(0,9+1):
+    #     img = Image.open(f"training/digits/{i}.jpg")  
+    #     img = NeuralNetworkModel.prepare_image(img)
+    #     digit, accuracy, predictions = model.make_predictions(img)
+    #     print(f"Label: {i} <=> Digit: {digit}")
 
-    for i in range(0,9+1):
-        img = Image.open(f"training/digits/{i}.jpg")  
-        img_array = NeuralNetworkModel.process_image(img)
-        digit, accuracy, predictions = model.make_predictions(img_array)
-        print(f"Label: {i} <=> Digit: {digit}")
+    # # Evaluate the model using mnist numpy array
+    # (X_train, Y_train), (X_test, Y_test) = mnist.load_data()
+    # size, w, h = X_test.shape # 10000
+    # for i in range(0,1):
+    #     index = random.randint(0, size)
+    #     img = Image.fromarray(X_test[index])
+    #     img = NeuralNetworkModel.prepare_image(img)
+    #     digit, accuracy, predictions = model.make_predictions(img)
+    #     label = Y_test[index]
+    #     print(f"Label: {label} <=> Digit: {digit}")
+    #     plt.gray()
+    #     plt.imshow(X_test[index], interpolation='nearest')
+    #     plt.show()
+
 
 
